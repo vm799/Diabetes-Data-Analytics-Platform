@@ -2,9 +2,11 @@
 
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import JSONResponse, Response, FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from .core.config import settings
 from .api.endpoints import router
@@ -52,6 +54,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # Include API routes
 app.include_router(router, prefix="/api/v1")
 
@@ -79,6 +84,7 @@ async def root():
             "health": "/api/v1/health"
         },
         "demo_instructions": {
+            "web_interface": "Visit /app or /dashboard for the full web interface",
             "step_1": "Upload a CSV file using POST /api/v1/upload-csv",
             "step_2": "View analytics using GET /api/v1/analytics/{patient_id}",
             "step_3": "Try simulation mode: POST /api/v1/simulate-analytics/{patient_id}",
@@ -87,12 +93,25 @@ async def root():
     }
 
 
+@app.get("/app")
+@app.get("/dashboard")
+async def dashboard():
+    """Serve the TrueTrend web interface."""
+    return FileResponse("static/index.html")
+
+
+@app.get("/favicon.ico")
+async def favicon():
+    """Return empty favicon to prevent 404 errors."""
+    return Response(content=b"", media_type="image/x-icon")
+
+
 @app.exception_handler(404)
-async def not_found_handler(request, exc):
+async def not_found_handler(request: Request, exc: HTTPException):
     """Custom 404 handler."""
-    return HTTPException(
+    return JSONResponse(
         status_code=404,
-        detail="Endpoint not found. Visit / for available endpoints."
+        content={"detail": "Endpoint not found. Visit / for available endpoints."}
     )
 
 
