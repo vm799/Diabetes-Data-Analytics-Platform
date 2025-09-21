@@ -85,6 +85,7 @@ async def root():
         },
         "demo_instructions": {
             "web_interface": "Visit /app or /dashboard for the full web interface",
+            "clinical_dashboard": "Visit /clinical for the professional clinical dashboard",
             "step_1": "Upload a CSV file using POST /api/v1/upload-csv",
             "step_2": "View analytics using GET /api/v1/analytics/{patient_id}",
             "step_3": "Try simulation mode: POST /api/v1/simulate-analytics/{patient_id}",
@@ -98,6 +99,12 @@ async def root():
 async def dashboard():
     """Serve the TrueTrend web interface."""
     return FileResponse("static/index.html")
+
+
+@app.get("/clinical")
+async def clinical_dashboard():
+    """Serve the clinical dashboard interface."""
+    return FileResponse("static/clinical_dashboard.html")
 
 
 @app.get("/favicon.ico")

@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrueTrend Clinical Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/lucide@0.263.1/dist/umd/lucide.js" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.1/dist/umd/lucide.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-50: #f0f9ff;
+            --primary-100: #e0f2fe;
+            --primary-200: #bae6fd;
+            --primary-500: #0ea5e9;
+            --primary-600: #0284c7;
+            --primary-700: #0369a1;
+            --primary-900: #0c4a6e;
+            
+            --teal-50: #f0fdfa;
+            --teal-100: #ccfbf1;
+            --teal-200: #99f6e4;
+            --teal-500: #14b8a6;
+            --teal-600: #0d9488;
+            --teal-700: #0f766e;
+            
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-hover: rgba(255, 255, 255, 0.12);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--slate-900) 0%, var(--primary-900) 50%, var(--teal-700) 100%);
+            min-height: 100vh;
+            color: var(--slate-100);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .main-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            grid-template-rows: 72px 1fr;
+            grid-template-areas: 
+                "sidebar header"
+                "sidebar main";
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .header {
+            grid-area: header;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+        }
+        
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            grid-area: sidebar;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid var(--glass-border);
+            padding: 24px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary-600);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+        }
+        
+        .nav-section {
+            margin-bottom: 24px;
+        }
+        
+        .nav-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--slate-400);
+            margin-bottom: 12px;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .nav-item:hover {
+            background: var(--glass-hover);
+        }
+        
+        .nav-item.active {
+            background: var(--primary-600);
+            color: white;
+        }
+        
+        .nav-icon {
+            width: 18px;
+            height: 18px;
+        }
+        
+        /* Main Content */
+        .main-content {
+            grid-area: main;
+            padding: 32px;
+            overflow-y: auto;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: auto auto 1fr;
+            gap: 24px;
+            height: calc(100vh - 136px);
+        }
+        
+        /* Cards */
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            border-color: var(--primary-500);
+            transform: translateY(-2px);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: between;
+            margin-bottom: 20px;
+        }
+        
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .card-icon {
+            width: 20px;
+            height: 20px;
+            color: var(--primary-400);
+        }
+        
+        /* Upload Panel */
+        .upload-panel {
+            grid-column: 1;
+            grid-row: 1 / 3;
+        }
+        
+        .upload-zone {
+            border: 2px dashed var(--slate-600);
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            margin-bottom: 24px;
+        }
+        
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--primary-500);
+            background: var(--glass-hover);
+        }
+        
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            color: var(--slate-400);
+            margin: 0 auto 16px;
+        }
+        
+        .upload-text {
+            font-size: 16px;
+            font-weight: 500;
+            color: white;
+            margin-bottom: 8px;
+        }
+        
+        .upload-subtext {
+            font-size: 14px;
+            color: var(--slate-400);
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: var(--primary-600);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-700);
+        }
+        
+        .btn-secondary {
+            background: var(--glass-bg);
+            color: var(--slate-200);
+            border: 1px solid var(--glass-border);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--glass-hover);
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--slate-300);
+            margin-bottom: 8px;
+        }
+        
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary-600);
+        }
+        
+        /* Stats Cards */
+        .stats-grid {
+            grid-column: 2 / 4;
+            grid-row: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .stat-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-icon {
+            width: 32px;
+            height: 32px;
+            margin: 0 auto 12px;
+            color: var(--primary-400);
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--slate-400);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-change {
+            font-size: 12px;
+            font-weight: 500;
+            margin-top: 8px;
+        }
+        
+        .stat-change.positive {
+            color: var(--success);
+        }
+        
+        .stat-change.negative {
+            color: var(--error);
+        }
+        
+        /* Charts Panel */
+        .charts-panel {
+            grid-column: 2 / 4;
+            grid-row: 2;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+        
+        .chart-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Alerts Panel */
+        .alerts-panel {
+            grid-column: 1 / 4;
+            grid-row: 3;
+        }
+        
+        .alert-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 16px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+        
+        .alert-item:hover {
+            border-color: var(--primary-500);
+        }
+        
+        .alert-icon {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+        }
+        
+        .alert-icon.warning {
+            color: var(--warning);
+        }
+        
+        .alert-icon.error {
+            color: var(--error);
+        }
+        
+        .alert-icon.info {
+            color: var(--primary-400);
+        }
+        
+        .alert-content {
+            flex: 1;
+        }
+        
+        .alert-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 4px;
+        }
+        
+        .alert-message {
+            font-size: 13px;
+            color: var(--slate-300);
+            margin-bottom: 8px;
+        }
+        
+        .alert-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 11px;
+            color: var(--slate-400);
+        }
+        
+        .severity-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .severity-high {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+        }
+        
+        .severity-medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+        
+        .severity-low {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success);
+        }
+        
+        /* Empty States */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 24px;
+            text-align: center;
+        }
+        
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            color: var(--slate-500);
+            margin-bottom: 16px;
+        }
+        
+        .empty-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--slate-300);
+            margin-bottom: 8px;
+        }
+        
+        .empty-text {
+            font-size: 14px;
+            color: var(--slate-400);
+        }
+        
+        /* Loading States */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--glass-border);
+            border-top: 2px solid var(--primary-500);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                grid-template-areas: 
+                    "header"
+                    "main";
+            }
+            
+            .sidebar {
+                display: none;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-column: 1;
+                grid-row: 1;
+            }
+            
+            .upload-panel {
+                grid-column: 1;
+                grid-row: 2;
+            }
+            
+            .charts-panel {
+                grid-column: 1;
+                grid-row: 3;
+                grid-template-columns: 1fr;
+            }
+            
+            .alerts-panel {
+                grid-column: 1;
+                grid-row: 4;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="header-title">TrueTrend Clinical Dashboard</h1>
+            <div class="header-controls">
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span>System Operational</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i data-lucide="activity"></i>
+                </div>
+                <div class="logo-text">TrueTrend</div>
+            </div>
+
+            <nav>
+                <div class="nav-section">
+                    <div class="nav-title">Dashboard</div>
+                    <div class="nav-item active">
+                        <i data-lucide="bar-chart-3" class="nav-icon"></i>
+                        <span>Analytics</span>
+                    </div>
+                    <div class="nav-item">
+                        <i data-lucide="upload" class="nav-icon"></i>
+                        <span>Data Import</span>
+                    </div>
+                    <div class="nav-item">
+                        <i data-lucide="users" class="nav-icon"></i>
+                        <span>Patients</span>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">Clinical</div>
+                    <div class="nav-item">
+                        <i data-lucide="alert-triangle" class="nav-icon"></i>
+                        <span>Alerts</span>
+                    </div>
+                    <div class="nav-item">
+                        <i data-lucide="file-text" class="nav-icon"></i>
+                        <span>Reports</span>
+                    </div>
+                    <div class="nav-item">
+                        <i data-lucide="settings" class="nav-icon"></i>
+                        <span>Settings</span>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="dashboard-grid">
+                <!-- Upload Panel -->
+                <div class="card upload-panel">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i data-lucide="upload" class="card-icon"></i>
+                            Data Upload
+                        </h3>
+                    </div>
+
+                    <div class="upload-zone" id="uploadZone">
+                        <i data-lucide="file-plus" class="upload-icon"></i>
+                        <div class="upload-text">Drop CSV file here</div>
+                        <div class="upload-subtext">or click to browse</div>
+                        <input type="file" id="csvFile" accept=".csv" style="display: none;">
+                        <button class="btn btn-primary" onclick="document.getElementById('csvFile').click()">
+                            <i data-lucide="folder-open"></i>
+                            Choose File
+                        </button>
+                    </div>
+
+                    <form id="uploadForm">
+                        <div class="form-group">
+                            <label class="form-label">Patient ID</label>
+                            <input type="text" class="form-input" id="patientId" placeholder="Enter patient identifier" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Device Type</label>
+                            <select class="form-select" id="deviceType">
+                                <option value="UNKNOWN">Auto-detect</option>
+                                <option value="DEXCOM">Dexcom CGM</option>
+                                <option value="LIBRE_VIEW">LibreView</option>
+                                <option value="GLOOKO">Glooko</option>
+                                <option value="TANDEM">Tandem Pump</option>
+                                <option value="MEDTRONIC">Medtronic</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">User Role</label>
+                            <select class="form-select" id="userRole" required>
+                                <option value="">Select role</option>
+                                <option value="patient">Patient</option>
+                                <option value="clinician">Healthcare Provider</option>
+                            </select>
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" class="checkbox" id="consentConfirmed" required>
+                            <label for="consentConfirmed">Patient consent confirmed</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" id="uploadBtn">
+                            <i data-lucide="upload"></i>
+                            Process Data
+                        </button>
+
+                        <button type="button" class="btn btn-secondary" style="width: 100%;" onclick="loadSampleData()">
+                            <i data-lucide="database"></i>
+                            Load Sample Data
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i data-lucide="target" class="stat-icon"></i>
+                        <div class="stat-value" id="timeInRange">--</div>
+                        <div class="stat-label">Time in Range</div>
+                        <div class="stat-change positive" id="timeInRangeChange">+2.1% vs last week</div>
+                    </div>
+                    <div class="stat-card">
+                        <i data-lucide="activity" class="stat-icon"></i>
+                        <div class="stat-value" id="avgGlucose">--</div>
+                        <div class="stat-label">Avg Glucose</div>
+                        <div class="stat-change negative" id="avgGlucoseChange">-3.2 mg/dL vs last week</div>
+                    </div>
+                    <div class="stat-card">
+                        <i data-lucide="alert-triangle" class="stat-icon"></i>
+                        <div class="stat-value" id="alertCount">--</div>
+                        <div class="stat-label">Active Alerts</div>
+                        <div class="stat-change positive" id="alertChange">2 new today</div>
+                    </div>
+                </div>
+
+                <!-- Charts Panel -->
+                <div class="charts-panel">
+                    <div class="chart-container">
+                        <div class="chart-title">
+                            <i data-lucide="trending-up"></i>
+                            Glucose Trend
+                        </div>
+                        <canvas id="glucoseChart" width="400" height="200"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title">
+                            <i data-lucide="pie-chart"></i>
+                            Distribution
+                        </div>
+                        <canvas id="distributionChart" width="200" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- Alerts Panel -->
+                <div class="card alerts-panel">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i data-lucide="alert-triangle" class="card-icon"></i>
+                            Clinical Alerts
+                        </h3>
+                    </div>
+                    
+                    <div id="alertsContainer">
+                        <div class="empty-state">
+                            <i data-lucide="clipboard-list" class="empty-icon"></i>
+                            <div class="empty-title">No alerts available</div>
+                            <div class="empty-text">Upload patient data to view clinical alerts and patterns</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // API Base URL
+        const API_BASE = '/api/v1';
+
+        // Chart instances
+        let glucoseChart = null;
+        let distributionChart = null;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // File upload
+            const uploadZone = document.getElementById('uploadZone');
+            const csvFile = document.getElementById('csvFile');
+            const uploadForm = document.getElementById('uploadForm');
+
+            // Drag and drop
+            uploadZone.addEventListener('dragover', handleDragOver);
+            uploadZone.addEventListener('drop', handleDrop);
+            uploadZone.addEventListener('click', () => csvFile.click());
+
+            // File selection
+            csvFile.addEventListener('change', handleFileSelect);
+
+            // Form submission
+            uploadForm.addEventListener('submit', handleFormSubmit);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('csvFile').files = files;
+                handleFileSelect({ target: { files } });
+            }
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const uploadText = document.querySelector('.upload-text');
+                uploadText.textContent = file.name;
+            }
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const file = document.getElementById('csvFile').files[0];
+            const patientId = document.getElementById('patientId').value;
+            const userRole = document.getElementById('userRole').value;
+            const deviceType = document.getElementById('deviceType').value;
+            const consentConfirmed = document.getElementById('consentConfirmed').checked;
+
+            if (!file || !patientId || !userRole || !consentConfirmed) {
+                showNotification('Please fill in all required fields and confirm consent.', 'error');
+                return;
+            }
+
+            const uploadBtn = document.getElementById('uploadBtn');
+            const originalText = uploadBtn.innerHTML;
+            uploadBtn.innerHTML = '<div class="loading"></div> Processing...';
+            uploadBtn.disabled = true;
+
+            try {
+                // Upload CSV
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('patient_id', patientId);
+                formData.append('user_role', userRole);
+                formData.append('device_type', deviceType);
+                formData.append('consent_confirmed', consentConfirmed);
+
+                const uploadResponse = await fetch(`${API_BASE}/upload-csv`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error('Upload failed');
+                }
+
+                const uploadResult = await uploadResponse.json();
+                showNotification(`Successfully processed ${uploadResult.message}`, 'success');
+
+                // Load analytics
+                await loadAnalytics(patientId, userRole);
+
+            } catch (error) {
+                showNotification(`Error: ${error.message}`, 'error');
+            } finally {
+                uploadBtn.innerHTML = originalText;
+                uploadBtn.disabled = false;
+            }
+        }
+
+        async function loadSampleData() {
+            try {
+                const response = await fetch('/static/sample_diabetes_data.csv');
+                const csvContent = await response.text();
+                
+                // Create a file object from the CSV content
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const file = new File([blob], 'sample_diabetes_data.csv', { type: 'text/csv' });
+                
+                // Set form values
+                document.getElementById('patientId').value = 'SAMPLE-001';
+                document.getElementById('userRole').value = 'clinician';
+                document.getElementById('consentConfirmed').checked = true;
+                
+                // Simulate file selection
+                const fileInput = document.getElementById('csvFile');
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInput.files = dataTransfer.files;
+                
+                document.querySelector('.upload-text').textContent = 'sample_diabetes_data.csv';
+                
+                showNotification('Sample data loaded. Click "Process Data" to analyze.', 'info');
+            } catch (error) {
+                showNotification('Failed to load sample data', 'error');
+            }
+        }
+
+        async function loadAnalytics(patientId, userRole) {
+            try {
+                const response = await fetch(`${API_BASE}/simulate-analytics/${patientId}?user_role=${userRole}`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load analytics');
+                }
+
+                const data = await response.json();
+                updateDashboard(data);
+
+            } catch (error) {
+                console.error('Analytics loading failed:', error);
+                showNotification('Failed to load analytics', 'error');
+            }
+        }
+
+        function updateDashboard(data) {
+            // Update stats
+            if (data.statistical_summary) {
+                const stats = data.statistical_summary;
+                document.getElementById('timeInRange').textContent = `${stats.time_in_range_70_180}%`;
+                document.getElementById('avgGlucose').textContent = `${stats.mean_glucose} mg/dL`;
+            }
+
+            document.getElementById('alertCount').textContent = data.analytics_results ? data.analytics_results.length : 0;
+
+            // Update alerts
+            updateAlerts(data.analytics_results || []);
+
+            // Update charts with sample data
+            updateCharts();
+        }
+
+        function updateAlerts(alerts) {
+            const container = document.getElementById('alertsContainer');
+            
+            if (alerts.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i data-lucide="check-circle" class="empty-icon"></i>
+                        <div class="empty-title">No clinical alerts</div>
+                        <div class="empty-text">All glucose patterns appear within normal parameters</div>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = alerts.map(alert => `
+                <div class="alert-item">
+                    <i data-lucide="${getAlertIcon(alert.severity)}" class="alert-icon ${alert.severity}"></i>
+                    <div class="alert-content">
+                        <div class="alert-title">${formatAlertTitle(alert.rule_name)}</div>
+                        <div class="alert-message">${alert.description}</div>
+                        <div class="alert-meta">
+                            <span class="severity-badge severity-${alert.severity}">${alert.severity}</span>
+                            <span>${alert.clinical_significance}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        function getAlertIcon(severity) {
+            switch (severity) {
+                case 'high': return 'alert-circle';
+                case 'medium': return 'alert-triangle';
+                case 'low': return 'info';
+                default: return 'alert-triangle';
+            }
+        }
+
+        function formatAlertTitle(ruleName) {
+            return ruleName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        function initializeCharts() {
+            // Glucose trend chart
+            const glucoseCtx = document.getElementById('glucoseChart').getContext('2d');
+            glucoseChart = new Chart(glucoseCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Glucose',
+                        data: [],
+                        borderColor: '#0ea5e9',
+                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+
+            // Distribution chart
+            const distributionCtx = document.getElementById('distributionChart').getContext('2d');
+            distributionChart = new Chart(distributionCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['In Range', 'High', 'Low'],
+                    datasets: [{
+                        data: [70, 25, 5],
+                        backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#94a3b8', font: { size: 12 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCharts() {
+            // Sample data for demonstration
+            const sampleData = {
+                labels: ['6 AM', '9 AM', '12 PM', '3 PM', '6 PM', '9 PM'],
+                values: [95, 120, 180, 145, 200, 160]
+            };
+
+            glucoseChart.data.labels = sampleData.labels;
+            glucoseChart.data.datasets[0].data = sampleData.values;
+            glucoseChart.update();
+        }
+
+        function showNotification(message, type) {
+            // Simple notification implementation
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 16px 20px;
+                background: ${type === 'success' ? '#22c55e' : type === 'error' ? '#ef4444' : '#0ea5e9'};
+                color: white;
+                border-radius: 8px;
+                font-weight: 500;
+                z-index: 1000;
+                max-width: 400px;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
