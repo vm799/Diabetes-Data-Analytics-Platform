@@ -1,6 +1,7 @@
 """FastAPI endpoint definitions."""
 
 import logging
+import statistics
 from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
@@ -13,6 +14,7 @@ from ..models.data_models import (
 from ..services.csv_ingestion import CSVIngestionService
 from ..services.analytics_engine import ClinicalAnalyticsEngine
 from ..core.exceptions import DataIngestionError, DataValidationError, AnalyticsError
+from ..core.data_store import data_store
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +55,10 @@ async def upload_csv_file(
         # Run analytics
         analytics_results = await analytics_engine.analyze_patient_data(patient_data)
         
+        # Store data and analytics results
+        data_store.store_patient_data(patient_id, patient_data)
+        data_store.store_analytics_results(patient_id, analytics_results)
+        
         return {
             "status": "success",
             "message": f"Processed {len(patient_data.glucose_readings)} glucose readings",
@@ -84,28 +90,26 @@ async def get_analytics_results(
 ):
     """Get analytics results for a patient."""
     try:
-        # In production, this would fetch from database
-        # For MVP, return placeholder analytics results
-        sample_results = [
-            AnalyticsResult(
-                rule_name="postprandial_hyperglycemia",
-                severity="medium",
-                count=3,
-                description="Found 3 instances of postprandial hyperglycemia (>180 mg/dL)",
-                clinical_significance="May indicate need for meal insulin timing or dosing adjustment",
-                evidence=[
-                    {
-                        "meal_time": "2024-01-01T08:00:00",
-                        "max_glucose": 210,
-                        "carbs": 45,
-                        "peak_time_minutes": 75
-                    }
-                ]
+        # Check if patient data exists
+        if not data_store.has_data(patient_id):
+            raise HTTPException(
+                status_code=404, 
+                detail=f"No data found for patient {patient_id}. Please upload CSV data first."
             )
-        ]
         
-        return sample_results
+        # Get stored analytics results
+        analytics_results = data_store.get_analytics_results(patient_id)
         
+        if not analytics_results:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No analytics results found for patient {patient_id}"
+            )
+        
+        return analytics_results
+        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to get analytics results: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -149,62 +153,56 @@ async def simulate_analytics(
     patient_id: str,
     user_role: UserRole
 ):
-    """Simulate analytics processing for demonstration."""
+    """Get analytics results for patient with user-role specific formatting."""
     try:
-        # Simulate analytics results for demo
-        demo_results = [
-            AnalyticsResult(
-                rule_name="postprandial_hyperglycemia",
-                severity="high",
-                count=5,
-                description="Found 5 instances of postprandial hyperglycemia (>180 mg/dL)",
-                clinical_significance="Indicates need for meal insulin timing or dosing adjustment",
-                evidence=[
-                    {
-                        "meal_time": "2024-01-01T08:00:00",
-                        "max_glucose": 220,
-                        "carbs": 60,
-                        "peak_time_minutes": 90
-                    },
-                    {
-                        "meal_time": "2024-01-01T12:30:00", 
-                        "max_glucose": 195,
-                        "carbs": 45,
-                        "peak_time_minutes": 60
-                    }
-                ]
-            ),
-            AnalyticsResult(
-                rule_name="mistimed_bolus",
-                severity="medium",
-                count=2,
-                description="Found 2 instances of delayed meal insulin with glucose spikes",
-                clinical_significance="Suggests need for pre-meal insulin timing education",
-                evidence=[
-                    {
-                        "meal_time": "2024-01-01T18:00:00",
-                        "bolus_time": "2024-01-01T18:15:00",
-                        "delay_minutes": 15,
-                        "max_glucose": 185,
-                        "carbs": 50,
-                        "insulin_units": 6
-                    }
-                ]
+        # Check if patient data exists
+        if not data_store.has_data(patient_id):
+            raise HTTPException(
+                status_code=404, 
+                detail=f"No data found for patient {patient_id}. Please upload CSV data first."
             )
-        ]
         
-        # Generate different reports based on user role
+        # Get stored analytics results and patient data
+        analytics_results = data_store.get_analytics_results(patient_id)
+        patient_data = data_store.get_patient_data(patient_id)
+        
+        if not analytics_results:
+            # If no analytics yet, run them now
+            analytics_results = await analytics_engine.analyze_patient_data(patient_data)
+            data_store.store_analytics_results(patient_id, analytics_results)
+        
+        # Calculate statistics from actual data
+        glucose_readings = [reading.glucose_value for reading in patient_data.glucose_readings]
+        if glucose_readings:
+            mean_glucose = sum(glucose_readings) / len(glucose_readings)
+            time_in_range = len([g for g in glucose_readings if 70 <= g <= 180]) / len(glucose_readings) * 100
+            glucose_cv = (statistics.stdev(glucose_readings) / mean_glucose) * 100 if len(glucose_readings) > 1 else 0
+            estimated_a1c = (mean_glucose + 46.7) / 28.7  # Approximate conversion
+        else:
+            mean_glucose = time_in_range = glucose_cv = estimated_a1c = 0
+        
+        # Generate role-specific responses based on actual analytics
         if user_role == UserRole.PATIENT:
-            summary = "We analyzed your recent diabetes data and found some patterns worth discussing with your healthcare team."
-            insights = [
-                "Glucose levels tend to rise after meals, particularly dinner",
-                "Taking insulin a few minutes before eating might help control spikes"
-            ]
-            recommendations = [
-                "Consider discussing meal insulin timing with your care team",
-                "Keep a food diary to identify which meals cause the highest glucose rises",
-                "Continue regular glucose monitoring as prescribed"
-            ]
+            # Generate patient-friendly insights from actual results
+            insights = []
+            recommendations = []
+            
+            for result in analytics_results:
+                if result.rule_name == "postprandial_hyperglycemia":
+                    insights.append("Your glucose levels tend to rise after meals")
+                    recommendations.append("Consider discussing meal insulin timing with your care team")
+                elif result.rule_name == "mistimed_bolus":
+                    insights.append("Taking insulin closer to meal time might help control spikes")
+                    recommendations.append("Try taking insulin a few minutes before eating")
+                elif result.rule_name == "carb_ratio_mismatch":
+                    insights.append("Similar meals show different glucose responses")
+                    recommendations.append("Keep a food diary to identify patterns")
+            
+            if not insights:
+                insights = ["Your glucose patterns look stable"]
+                recommendations = ["Continue your current diabetes management plan"]
+            
+            summary = f"We analyzed your diabetes data and found {len(analytics_results)} patterns worth discussing with your healthcare team." if analytics_results else "Your glucose patterns appear stable."
             
             return {
                 "status": "success",
@@ -213,28 +211,40 @@ async def simulate_analytics(
                 "summary": summary,
                 "key_insights": insights,
                 "recommendations": recommendations,
-                "analytics_results": demo_results
+                "analytics_results": analytics_results
             }
         
         else:  # Clinician role
+            # Generate clinical recommendations based on actual results
+            clinical_recommendations = []
+            
+            for result in analytics_results:
+                if result.rule_name == "postprandial_hyperglycemia":
+                    clinical_recommendations.append("Consider adjusting meal insulin-to-carb ratio or timing")
+                elif result.rule_name == "mistimed_bolus":
+                    clinical_recommendations.append("Patient education needed on pre-meal insulin timing")
+                elif result.rule_name == "carb_ratio_mismatch":
+                    clinical_recommendations.append("Evaluate current insulin-to-carb ratios for adjustment")
+            
+            if not clinical_recommendations:
+                clinical_recommendations = ["Continue current management plan - patterns appear stable"]
+            
             return {
                 "status": "success", 
                 "user_role": user_role,
                 "report_type": "clinical",
-                "analytics_results": demo_results,
-                "clinical_recommendations": [
-                    "Consider adjusting meal insulin-to-carb ratio or timing",
-                    "Patient education needed on pre-meal insulin timing",
-                    "Evaluate current insulin type and absorption profile"
-                ],
+                "analytics_results": analytics_results,
+                "clinical_recommendations": clinical_recommendations,
                 "statistical_summary": {
-                    "mean_glucose": 145.2,
-                    "glucose_cv": 28.5,
-                    "time_in_range_70_180": 68.4,
-                    "estimated_a1c": 7.2
+                    "mean_glucose": round(mean_glucose, 1),
+                    "glucose_cv": round(glucose_cv, 1),
+                    "time_in_range_70_180": round(time_in_range, 1),
+                    "estimated_a1c": round(estimated_a1c, 1)
                 }
             }
         
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Simulation failed: {e}")
+        logger.error(f"Analytics processing failed: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
