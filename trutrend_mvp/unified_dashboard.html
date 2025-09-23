@@ -1,0 +1,3077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrueTrend Analytics - Unified Dashboard</title>
+    <style>
+        :root {
+            /* Light theme variables */
+            --bg-primary-light: #ffffff;
+            --bg-secondary-light: #f8fafc;
+            --glass-bg-light: rgba(255, 255, 255, 0.95);
+            --glass-border-light: rgba(0, 102, 204, 0.1);
+            --glass-shadow-light: 0 4px 24px rgba(0, 0, 0, 0.08);
+            --text-primary-light: #0f172a;
+            --text-secondary-light: #475569;
+            --text-muted-light: #64748b;
+            
+            /* Dark theme variables */
+            --bg-primary-dark: #0a0a0f;
+            --bg-secondary-dark: #1a1a2e;
+            --glass-bg-dark: rgba(255, 255, 255, 0.05);
+            --glass-border-dark: rgba(255, 255, 255, 0.1);
+            --glass-shadow-dark: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --text-primary-dark: #ffffff;
+            --text-secondary-dark: rgba(255, 255, 255, 0.8);
+            --text-muted-dark: rgba(255, 255, 255, 0.6);
+            
+            /* Accent colors (same for both themes) */
+            --accent-blue: #00d4ff;
+            --accent-purple: #a855f7;
+            --accent-green: #10d49a;
+            --accent-orange: #ff6b35;
+            --accent-red: #ff4757;
+            
+            /* Status colors */
+            --success: #10d49a;
+            --warning: #ffb347;
+            --error: #ff4757;
+            --info: #00d4ff;
+            
+            /* Clinical range colors */
+            --range-excellent: #10d49a;
+            --range-good: #ffb347;
+            --range-needs-attention: #ff6b35;
+            --range-critical: #ff4757;
+        }
+
+        /* Light theme (default) */
+        body {
+            --bg-primary: var(--bg-primary-light);
+            --bg-secondary: var(--bg-secondary-light);
+            --glass-bg: var(--glass-bg-light);
+            --glass-border: var(--glass-border-light);
+            --glass-shadow: var(--glass-shadow-light);
+            --text-primary: var(--text-primary-light);
+            --text-secondary: var(--text-secondary-light);
+            --text-muted: var(--text-muted-light);
+            --glass-hover: rgba(0, 102, 204, 0.05);
+        }
+
+        /* Dark theme */
+        body.dark-theme {
+            --bg-primary: var(--bg-primary-dark);
+            --bg-secondary: var(--bg-secondary-dark);
+            --glass-bg: var(--glass-bg-dark);
+            --glass-border: var(--glass-border-dark);
+            --glass-shadow: var(--glass-shadow-dark);
+            --text-primary: var(--text-primary-dark);
+            --text-secondary: var(--text-secondary-dark);
+            --text-muted: var(--text-muted-dark);
+            --glass-hover: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            transition: all 0.3s ease;
+        }
+
+        /* Animated background for dark theme */
+        body.dark-theme::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(16, 212, 154, 0.05) 0%, transparent 50%);
+            animation: backgroundShift 20s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes backgroundShift {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Theme toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 1000;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 50px;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: var(--glass-hover);
+            transform: translateY(-2px);
+        }
+
+        .theme-btn {
+            padding: 0.75rem 1rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .theme-btn.active {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .theme-btn:hover:not(.active) {
+            color: var(--text-primary);
+            background: var(--glass-hover);
+        }
+
+        /* Clinical Mode Toggle */
+        .clinical-toggle {
+            position: fixed;
+            top: 120px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            padding: 8px;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+
+        .clinical-btn {
+            background: transparent;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 16px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 0.875rem;
+            white-space: nowrap;
+        }
+
+        .clinical-btn.active {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .clinical-btn:hover:not(.active) {
+            color: var(--text-primary);
+            background: var(--glass-hover);
+        }
+
+        /* Glass morphism cards */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                var(--accent-blue), 
+                var(--accent-purple), 
+                transparent
+            );
+        }
+
+        .glass-card:hover {
+            background: var(--glass-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-card.elevated {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* Mode Selection Cards */
+        .mode-selection-card {
+            margin-bottom: 3rem !important;
+            border: 2px solid var(--accent-blue);
+            background: linear-gradient(135deg, 
+                rgba(16, 212, 154, 0.05), 
+                rgba(16, 212, 154, 0.02)
+            );
+        }
+
+        .mode-selection-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            justify-items: center;
+        }
+        
+        /* When only one card is visible, center it */
+        .mode-selection-grid.single-mode {
+            grid-template-columns: 1fr;
+            max-width: 600px;
+            margin: 0 auto 2rem auto;
+        }
+
+        .mode-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 2px solid var(--glass-border);
+            padding: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mode-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .mode-card.active {
+            border-color: var(--accent-blue);
+            background: linear-gradient(135deg, 
+                rgba(16, 212, 154, 0.1), 
+                rgba(0, 212, 255, 0.05)
+            );
+            box-shadow: 0 15px 35px rgba(16, 212, 154, 0.2);
+        }
+
+        .mode-card.patient-mode.active {
+            border-color: #4CAF50;
+            background: linear-gradient(135deg, 
+                rgba(76, 175, 80, 0.1), 
+                rgba(76, 175, 80, 0.05)
+            );
+        }
+
+        .mode-card.clinician-mode.active {
+            border-color: #ff6b6b;
+            background: linear-gradient(135deg, 
+                rgba(255, 107, 107, 0.1), 
+                rgba(255, 107, 107, 0.05)
+            );
+        }
+
+        .mode-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .mode-card h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .mode-card p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .mode-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 1.5rem 0;
+            text-align: left;
+        }
+
+        .mode-features li {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .mode-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .patient-badge {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .clinician-badge {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+        }
+
+        .current-mode-indicator {
+            text-align: center;
+            padding: 1rem;
+            background: var(--glass-bg);
+            border-radius: 15px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .current-mode-indicator span {
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-top: 5rem; /* Add top padding to avoid overlap */
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .header p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Device selection */
+        .device-selection {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+
+        .device-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            min-width: 200px;
+        }
+
+        .device-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, var(--glass-hover), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .device-card:hover::before {
+            left: 100%;
+        }
+
+        .device-card:hover {
+            background: var(--glass-hover);
+            transform: translateY(-5px) scale(1.02);
+            border-color: var(--accent-blue);
+        }
+
+        .device-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .device-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .device-desc {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .download-link {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .download-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Upload section */
+        .upload-section {
+            background: var(--glass-bg);
+            border: 2px dashed var(--glass-border);
+            border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            margin: 2rem 0;
+        }
+
+        .upload-section.dragover {
+            border-color: var(--accent-blue);
+            background: rgba(0, 212, 255, 0.05);
+            transform: scale(1.02);
+        }
+
+        .upload-content h3 {
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .upload-content p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.4);
+        }
+
+        /* Mode selector with different comprehension levels */
+        .mode-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .mode-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mode-card.active {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .mode-card:hover {
+            background: var(--glass-hover);
+            transform: translateY(-3px);
+        }
+
+        .mode-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .mode-description {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .mode-features {
+            list-style: none;
+            text-align: left;
+        }
+
+        .mode-features li {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            margin-bottom: 0.25rem;
+            position: relative;
+            padding-left: 1rem;
+        }
+
+        .mode-features li::before {
+            content: '●';
+            color: var(--accent-blue);
+            position: absolute;
+            left: 0;
+        }
+
+        /* Status messages */
+        .status {
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
+            margin: 1rem 0;
+            font-weight: 500;
+            display: none;
+            backdrop-filter: blur(10px);
+            border: 1px solid transparent;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .status.success {
+            background: rgba(16, 212, 154, 0.1);
+            color: var(--success);
+            border-color: rgba(16, 212, 154, 0.3);
+        }
+
+        .status.error {
+            background: rgba(255, 71, 87, 0.1);
+            color: var(--error);
+            border-color: rgba(255, 71, 87, 0.3);
+        }
+
+        .status.info {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--info);
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+
+        /* Results section */
+        .results {
+            display: none;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        /* Statistics grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            background: var(--glass-hover);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-sublabel {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Charts */
+        .chart-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            padding: 2rem;
+            margin: 2rem 0;
+            transition: all 0.3s ease;
+        }
+
+        .chart-container:hover {
+            background: var(--glass-hover);
+        }
+
+        .chart-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        /* Analysis display */
+        .analysis-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .analysis-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .analysis-card:hover {
+            background: var(--glass-hover);
+            transform: translateY(-2px);
+        }
+
+        .analysis-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+
+        .analysis-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 2px;
+        }
+
+        /* Pattern cards */
+        .pattern-card {
+            background: var(--glass-bg);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--glass-border);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+        }
+
+        .pattern-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--glass-border);
+            transition: all 0.3s ease;
+        }
+
+        .pattern-card.critical::before {
+            background: var(--range-critical);
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.5);
+        }
+
+        .pattern-card.needs-attention::before {
+            background: var(--range-needs-attention);
+            box-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
+        }
+
+        .pattern-card.good::before {
+            background: var(--range-good);
+            box-shadow: 0 0 20px rgba(255, 179, 71, 0.5);
+        }
+
+        .pattern-card.excellent::before {
+            background: var(--range-excellent);
+            box-shadow: 0 0 20px rgba(16, 212, 154, 0.5);
+        }
+
+        .pattern-card:hover {
+            background: var(--glass-hover);
+            transform: translateX(8px);
+        }
+
+        .pattern-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .severity-badge {
+            padding: 0.375rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .severity-critical {
+            background: rgba(255, 71, 87, 0.2);
+            color: var(--range-critical);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+        }
+
+        .severity-needs-attention {
+            background: rgba(255, 107, 53, 0.2);
+            color: var(--range-needs-attention);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+        }
+
+        .severity-good {
+            background: rgba(255, 179, 71, 0.2);
+            color: var(--range-good);
+            border: 1px solid rgba(255, 179, 71, 0.3);
+        }
+
+        .severity-excellent {
+            background: rgba(16, 212, 154, 0.2);
+            color: var(--range-excellent);
+            border: 1px solid rgba(16, 212, 154, 0.3);
+        }
+
+        .pattern-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .pattern-description {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        /* Data quality indicator */
+        .data-quality {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--glass-bg);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        .quality-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        .quality-excellent { color: var(--range-excellent); }
+        .quality-good { color: var(--range-good); }
+        .quality-needs-attention { color: var(--range-needs-attention); }
+        .quality-poor { color: var(--range-critical); }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .theme-toggle {
+                top: 1rem;
+                right: 1rem;
+                flex-direction: column;
+                gap: 5px;
+            }
+
+            .clinical-toggle {
+                top: 140px;
+                right: 1rem;
+                left: 1rem;
+                flex-direction: row;
+                justify-content: center;
+                gap: 5px;
+                padding: 6px;
+            }
+
+            .clinical-btn {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .mode-selection-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .mode-card {
+                padding: 1.5rem;
+            }
+
+            .mode-icon {
+                font-size: 3rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .mode-selector {
+                grid-template-columns: 1fr;
+            }
+
+            .device-selection {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .pattern-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+        }
+
+        /* Loading animations */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent-blue);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Hidden elements */
+        .file-input {
+            display: none;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--glass-bg);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-blue);
+        }
+
+        /* Safety Warning Styles */
+        .safety-warnings-container {
+            margin: 20px 0;
+            padding: 0;
+        }
+
+        .safety-alert {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .safety-alert.critical {
+            background: rgba(255, 71, 87, 0.1);
+            border-left-color: #ff4757;
+            color: var(--text-primary);
+        }
+
+        .safety-alert.high {
+            background: rgba(255, 107, 53, 0.1);
+            border-left-color: #ff6b35;
+            color: var(--text-primary);
+        }
+
+        .safety-alert.medium {
+            background: rgba(255, 193, 7, 0.1);
+            border-left-color: #ffc107;
+            color: var(--text-primary);
+        }
+
+        .alert-icon {
+            font-size: 20px;
+            margin-right: 12px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-content strong {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .clinical-disclaimer {
+            display: flex;
+            align-items: flex-start;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(74, 144, 226, 0.1);
+            border-left: 4px solid #4a90e2;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .disclaimer-icon {
+            font-size: 18px;
+            margin-right: 12px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .disclaimer-content {
+            flex: 1;
+            color: var(--text-secondary);
+        }
+
+        .disclaimer-content strong {
+            color: var(--text-primary);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* Error Pane Styles */
+        .error-pane {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 71, 87, 0.05);
+            border: 1px solid rgba(255, 71, 87, 0.2);
+            border-radius: 12px;
+            color: var(--text-primary);
+        }
+
+        .error-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .error-icon {
+            font-size: 32px;
+            margin-right: 15px;
+        }
+
+        .error-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #ff4757;
+        }
+
+        .error-message {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .error-recommendations {
+            margin-bottom: 20px;
+        }
+
+        .error-recommendations h4 {
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .error-recommendations ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .error-recommendations li {
+            margin-bottom: 12px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .error-actions {
+            text-align: center;
+        }
+
+        .retry-btn {
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .retry-btn:hover {
+            background: var(--accent-blue-dark);
+            transform: translateY(-2px);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .modal-header.error-header {
+            background: rgba(255, 71, 87, 0.1);
+            border-bottom-color: rgba(255, 71, 87, 0.2);
+        }
+
+        .modal-header.success-header {
+            background: rgba(16, 212, 154, 0.1);
+            border-bottom-color: rgba(16, 212, 154, 0.2);
+        }
+
+        .modal-icon {
+            font-size: 24px;
+            margin-right: 12px;
+        }
+
+        .modal-header h2 {
+            flex: 1;
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 5px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .error-summary {
+            margin-bottom: 24px;
+        }
+
+        .error-message {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+
+        .data-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .summary-item .label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .summary-item .value {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .action-points h3 {
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+
+        .action-point {
+            display: flex;
+            margin-bottom: 16px;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .action-point.high {
+            background: rgba(255, 71, 87, 0.1);
+            border-left-color: #ff4757;
+        }
+
+        .action-point.medium {
+            background: rgba(255, 193, 7, 0.1);
+            border-left-color: #ffc107;
+        }
+
+        .action-point.low {
+            background: rgba(74, 144, 226, 0.1);
+            border-left-color: #4a90e2;
+        }
+
+        .action-icon {
+            font-size: 20px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .action-content {
+            flex: 1;
+        }
+
+        .action-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .action-description {
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .action-step {
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .results-summary {
+            margin-bottom: 24px;
+        }
+
+        .results-summary h3 {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .success-message {
+            color: var(--text-primary);
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .quality-indicator {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .quality-indicator.high {
+            background: rgba(16, 212, 154, 0.2);
+            color: #10d49a;
+        }
+
+        .quality-indicator.moderate {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .quality-indicator.low {
+            background: rgba(255, 71, 87, 0.2);
+            color: #ff4757;
+        }
+
+        .stats-section h4,
+        .insights-section h4,
+        .recommendations-section h4,
+        .clinical-section h4 {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .stat-value {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .insights-list,
+        .recommendations-list,
+        .clinical-list {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 24px;
+        }
+
+        .insights-list li,
+        .recommendations-list li,
+        .clinical-list li {
+            padding: 8px 0;
+            color: var(--text-primary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .insights-list li:before {
+            content: "💡 ";
+            margin-right: 8px;
+        }
+
+        .recommendations-list li:before {
+            content: "📋 ";
+            margin-right: 8px;
+        }
+
+        .clinical-list li:before {
+            content: "🏥 ";
+            margin-right: 8px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 20px 24px;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .btn-primary,
+        .btn-secondary {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-blue-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .clinical-disclaimer {
+            display: flex;
+            align-items: flex-start;
+            padding: 16px;
+            background: rgba(74, 144, 226, 0.1);
+            border-radius: 8px;
+            margin-top: 24px;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .disclaimer-icon {
+            font-size: 16px;
+            margin-right: 8px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .disclaimer-text {
+            color: var(--text-secondary);
+        }
+
+        /* Tab System Styles */
+        .modal-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 16px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+            background: rgba(74, 144, 226, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Failure Summary Styles */
+        .failure-reasons {
+            margin-bottom: 24px;
+        }
+
+        .failure-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: rgba(255, 71, 87, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid #ff4757;
+        }
+
+        .failure-bullet {
+            font-size: 16px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .failure-text {
+            color: var(--text-primary);
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .validation-requirements h4 {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .requirements-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .requirements-list li {
+            padding: 8px 0;
+            color: var(--text-primary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            padding-left: 24px;
+        }
+
+        .requirements-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #10d49a;
+            font-weight: bold;
+        }
+
+        /* Technical Details Styles */
+        .technical-info {
+            color: var(--text-primary);
+        }
+
+        .json-display {
+            margin-bottom: 24px;
+        }
+
+        .json-display h4 {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .json-content {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            padding: 16px;
+            color: #e8e8e8;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .validation-details h4 {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .validation-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .validation-list li {
+            padding: 6px 0;
+            color: var(--text-primary);
+            font-size: 13px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .validation-list li strong {
+            color: var(--accent-blue);
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <div class="theme-toggle">
+        <button class="theme-btn" onclick="setTheme('light')">☀️ Light</button>
+        <button class="theme-btn active" onclick="setTheme('dark')">🌙 Dark</button>
+    </div>
+
+    <!-- Clinical Mode Toggle -->
+    <div class="clinical-toggle">
+        <button class="clinical-btn active" onclick="setClinicalMode('patient')">👤 Patient View</button>
+        <button class="clinical-btn" onclick="setClinicalMode('clinician')">🩺 Clinician Report</button>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>TrueTrend Analytics</h1>
+            <p>Advanced diabetes data analysis platform with intelligent insights</p>
+        </div>
+
+        <!-- Mode Selection Section -->
+        <div class="glass-card mode-selection-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="color: var(--text-primary); margin: 0;">🩺 Current View Mode</h2>
+                <button id="switch-mode-btn" class="theme-btn" onclick="switchMode()" style="background: var(--accent-blue); color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">
+                    Switch Mode
+                </button>
+            </div>
+            <div class="mode-selection-grid">
+                <div class="mode-card patient-mode active" onclick="selectMode('patient')">
+                    <div class="mode-icon">👤</div>
+                    <h3>Patient View</h3>
+                    <p>Simplified, easy-to-understand glucose insights for personal diabetes management</p>
+                    <ul class="mode-features">
+                        <li>✓ Clear glucose trends</li>
+                        <li>✓ Simple pattern alerts</li>
+                        <li>✓ User-friendly language</li>
+                        <li>✓ Action-oriented guidance</li>
+                    </ul>
+                    <div class="mode-badge patient-badge">Personal Use</div>
+                </div>
+                <div class="mode-card clinician-mode" onclick="selectMode('clinician')">
+                    <div class="mode-icon">🩺</div>
+                    <h3>Clinician Report</h3>
+                    <p>Advanced clinical analytics with specialist-grade metrics for endocrinologists and diabetes care teams</p>
+                    <ul class="mode-features">
+                        <li>✓ Time-in-Range (TIR): Target 70-180 mg/dL analysis</li>
+                        <li>✓ Glycemic Variability Index (GVI) & CV assessment</li>
+                        <li>✓ Dawn phenomenon & nocturnal hypoglycemia detection</li>
+                        <li>✓ Meal-related glucose excursions & postprandial patterns</li>
+                        <li>✓ HbA1c correlation & estimated glucose average (eAG)</li>
+                        <li>✓ CGM-derived metrics per ADA/EASD consensus</li>
+                        <li>✓ Hypoglycemia risk stratification (Level 1/2/3)</li>
+                        <li>✓ Ambulatory glucose profile (AGP) standardized reporting</li>
+                        <li>✓ Treatment optimization recommendations</li>
+                        <li>✓ Quality control metrics & sensor accuracy validation</li>
+                    </ul>
+                    <div class="mode-badge clinician-badge">Specialist Clinical Use</div>
+                </div>
+            </div>
+            <div class="current-mode-indicator">
+                <span id="current-mode-text">Currently in: <strong>Patient View</strong></span>
+            </div>
+        </div>
+
+        <!-- Device Selection Section -->
+        <div class="glass-card">
+            <h2 style="text-align: center; margin-bottom: 2rem; color: var(--text-primary);">Sample Datasets Available</h2>
+            
+            <!-- Quality Test Datasets -->
+            <div style="margin-bottom: 3rem;">
+                <h3 style="color: var(--text-primary); margin-bottom: 1rem;">🧪 Quality Validation Test Files</h3>
+                <div class="device-selection" style="grid-template-columns: 1fr 1fr;">
+                    <div class="device-card" style="border: 2px solid #10d49a; background: rgba(16, 212, 154, 0.1);">
+                        <div class="device-icon">✅</div>
+                        <div class="device-name">High Quality Test</div>
+                        <div class="device-desc">24-hour Dexcom data - WILL PASS validation (288 readings)</div>
+                        <div style="background: #10d49a; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin: 10px 0; text-align: center;">SUFFICIENT FOR ANALYSIS</div>
+                        <a href="static/test_high_quality.csv" download class="download-link">Download Test File</a>
+                    </div>
+                    <div class="device-card" style="border: 2px solid #ff4757; background: rgba(255, 71, 87, 0.1);">
+                        <div class="device-icon">⚠️</div>
+                        <div class="device-name">Poor Quality Test</div>
+                        <div class="device-desc">2-hour data with extreme values - WILL FAIL validation (25 readings)</div>
+                        <div style="background: #ff4757; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin: 10px 0; text-align: center;">INSUFFICIENT FOR ANALYSIS</div>
+                        <a href="static/test_insufficient_quality.csv" download class="download-link">Download Test File</a>
+                    </div>
+                </div>
+            </div>
+            
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem;">📱 Real Device Sample Data</h3>
+            <div class="device-selection">
+                <div class="device-card">
+                    <div class="device-icon">📊</div>
+                    <div class="device-name">Dexcom G7</div>
+                    <div class="device-desc">Continuous glucose monitoring with detailed event tracking</div>
+                    <a href="static/dexcom_14day_data.csv" download class="download-link">Download Sample</a>
+                </div>
+                <div class="device-card">
+                    <div class="device-icon">🔬</div>
+                    <div class="device-name">FreeStyle LibreView</div>
+                    <div class="device-desc">Flash glucose monitoring with scanning data</div>
+                    <a href="static/freestyle_7day_data.csv" download class="download-link">Download Sample</a>
+                </div>
+                <div class="device-card">
+                    <div class="device-icon">💉</div>
+                    <div class="device-name">Medtronic CareLink</div>
+                    <div class="device-desc">Integrated pump and CGM data with insulin tracking</div>
+                    <a href="static/medtronic_carelink_sample.csv" download class="download-link">Download Sample</a>
+                </div>
+                <div class="device-card">
+                    <div class="device-icon">⚡</div>
+                    <div class="device-name">Tandem t:connect</div>
+                    <div class="device-desc">Smart pump data with automated insulin delivery</div>
+                    <a href="static/tandem_tconnect_sample.csv" download class="download-link">Download Sample</a>
+                </div>
+                <div class="device-card">
+                    <div class="device-icon">🌐</div>
+                    <div class="device-name">Glooko Platform</div>
+                    <div class="device-desc">Multi-device aggregated diabetes management data</div>
+                    <a href="static/glooko_platform_sample.csv" download class="download-link">Download Sample</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="glass-card elevated">
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-content" id="uploadContent">
+                    <h3>Upload Your Diabetes Data</h3>
+                    <p>Drag and drop your CSV file or click to browse</p>
+                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                        Choose File
+                    </button>
+                    <input type="file" id="fileInput" class="file-input" accept=".csv" onchange="handleFileSelect(event)">
+                </div>
+            </div>
+        </div>
+
+        <!-- Mode Selector with Comprehension Levels -->
+        <div class="glass-card">
+            <h2 style="text-align: center; margin-bottom: 2rem; color: var(--text-primary);">Analysis Mode</h2>
+            <div class="mode-selector">
+                <div class="mode-card active" data-mode="patient-simple" onclick="selectMode('patient-simple')">
+                    <div class="mode-title">Patient Simple</div>
+                    <div class="mode-description">Easy-to-understand insights for patients</div>
+                    <ul class="mode-features">
+                        <li>Simple language and explanations</li>
+                        <li>Visual indicators and colors</li>
+                        <li>Actionable recommendations</li>
+                        <li>Educational content</li>
+                    </ul>
+                </div>
+                <div class="mode-card" data-mode="patient-detailed" onclick="selectMode('patient-detailed')">
+                    <div class="mode-title">Patient Detailed</div>
+                    <div class="mode-description">Comprehensive view for engaged patients</div>
+                    <ul class="mode-features">
+                        <li>Detailed metrics and trends</li>
+                        <li>Pattern recognition</li>
+                        <li>Goal tracking</li>
+                        <li>Self-management tips</li>
+                    </ul>
+                </div>
+                <div class="mode-card" data-mode="clinician-standard" onclick="selectMode('clinician-standard')">
+                    <div class="mode-title">Clinician Standard</div>
+                    <div class="mode-description">Clinical overview for healthcare providers</div>
+                    <ul class="mode-features">
+                        <li>ADA/EASD consensus metrics</li>
+                        <li>Risk assessment</li>
+                        <li>Clinical recommendations</li>
+                        <li>Therapy optimization</li>
+                    </ul>
+                </div>
+                <div class="mode-card" data-mode="clinician-advanced" onclick="selectMode('clinician-advanced')">
+                    <div class="mode-title">Clinician Advanced</div>
+                    <div class="mode-description">Deep analytics for specialists</div>
+                    <ul class="mode-features">
+                        <li>Advanced statistical analysis</li>
+                        <li>Research-grade metrics</li>
+                        <li>Predictive modeling</li>
+                        <li>Publication-ready data</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="status" id="status"></div>
+
+        <div class="results" id="results">
+            <div class="stats-grid" id="statsGrid"></div>
+            
+            <div id="dataQuality" class="data-quality" style="display: none;">
+                <div class="quality-indicator" id="qualityIndicator"></div>
+                <div>
+                    <strong>Data Quality Assessment:</strong>
+                    <span id="qualityText"></span>
+                </div>
+            </div>
+
+            <div id="tirChart" class="chart-container" style="display: none;">
+                <h4 class="chart-title">Time in Range Distribution</h4>
+                <canvas id="tirCanvas" width="500" height="300"></canvas>
+            </div>
+
+            <div id="glucoseChart" class="chart-container" style="display: none;">
+                <h4 class="chart-title">Glucose Trend Analysis</h4>
+                <canvas id="glucoseCanvas" width="900" height="400"></canvas>
+            </div>
+
+            <div class="analysis-container" id="analysisContainer">
+                <div class="analysis-card" id="analysisSection">
+                    <div id="insights"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme management
+        function setTheme(theme) {
+            const body = document.body;
+            const buttons = document.querySelectorAll('.theme-btn');
+            
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            if (theme === 'dark') {
+                body.classList.add('dark-theme');
+                document.querySelector('[onclick="setTheme(\'dark\')"]').classList.add('active');
+            } else {
+                body.classList.remove('dark-theme');
+                document.querySelector('[onclick="setTheme(\'light\')"]').classList.add('active');
+            }
+            
+            // Save theme preference
+            localStorage.setItem('trueTrendTheme', theme);
+        }
+
+        // Clinical Mode Management
+        let currentMode = 'patient'; // default to patient mode
+
+        function setClinicalMode(mode) {
+            currentMode = mode;
+            const buttons = document.querySelectorAll('.clinical-btn');
+            
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            if (mode === 'clinician') {
+                document.querySelector('[onclick="setClinicalMode(\'clinician\')"]').classList.add('active');
+                document.getElementById('current-mode-text').innerHTML = 'Currently in: <strong>Clinician Report</strong>';
+            } else {
+                document.querySelector('[onclick="setClinicalMode(\'patient\')"]').classList.add('active');
+                document.getElementById('current-mode-text').innerHTML = 'Currently in: <strong>Patient View</strong>';
+            }
+            
+            // Save mode preference
+            localStorage.setItem('trueTrendMode', mode);
+        }
+
+        function selectMode(mode) {
+            // Update main mode selection cards - hide inactive, show active
+            const cards = document.querySelectorAll('.mode-card');
+            const grid = document.querySelector('.mode-selection-grid');
+            
+            cards.forEach(card => {
+                card.classList.remove('active');
+                card.style.display = 'none'; // Hide all cards first
+            });
+            
+            // Add single-mode class for proper centering
+            grid.classList.add('single-mode');
+            
+            // Update switch button text
+            const switchBtn = document.getElementById('switch-mode-btn');
+            
+            if (mode === 'patient') {
+                const patientCard = document.querySelector('.patient-mode');
+                patientCard.classList.add('active');
+                patientCard.style.display = 'block'; // Show only selected card
+                switchBtn.textContent = '🩺 Switch to Clinician';
+            } else {
+                const clinicianCard = document.querySelector('.clinician-mode');
+                clinicianCard.classList.add('active');
+                clinicianCard.style.display = 'block'; // Show only selected card
+                switchBtn.textContent = '👤 Switch to Patient';
+            }
+            
+            // Also update the top toggle
+            setClinicalMode(mode);
+        }
+        
+        function switchMode() {
+            // Get current mode from clinical toggle or default to patient
+            const currentModeBtn = document.querySelector('.clinical-btn.active');
+            const currentMode = currentModeBtn ? 
+                (currentModeBtn.textContent.includes('Patient') ? 'patient' : 'clinician') : 'patient';
+            
+            // Switch to opposite mode
+            const newMode = currentMode === 'patient' ? 'clinician' : 'patient';
+            selectMode(newMode);
+        }
+
+        // Load saved theme and mode on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('trueTrendTheme') || 'dark';
+            const savedMode = localStorage.getItem('trueTrendMode') || 'patient';
+            setTheme(savedTheme);
+            selectMode(savedMode);
+            setupEventListeners();
+            initializeAnimations();
+        });
+
+        // Enhanced dashboard logic (same as before but adapted for unified theme)
+        let currentFile = null;
+        let currentData = null;
+
+        function setupEventListeners() {
+            const uploadSection = document.getElementById('uploadSection');
+            
+            // Drag and drop functionality
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadSection.addEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadSection.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadSection.addEventListener(eventName, unhighlight, false);
+            });
+
+            uploadSection.addEventListener('drop', handleDrop, false);
+        }
+
+        function initializeAnimations() {
+            // Animate device cards on load
+            const deviceCards = document.querySelectorAll('.device-card');
+            deviceCards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.style.animation = 'fadeInUp 0.6s ease-out both';
+            });
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight(e) {
+            document.getElementById('uploadSection').classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            document.getElementById('uploadSection').classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            if (files.length === 0) return;
+            
+            const file = files[0];
+            if (!file.name.endsWith('.csv')) {
+                showStatus('Please select a CSV file', 'error');
+                return;
+            }
+            
+            currentFile = file;
+            
+            // Update upload UI
+            const uploadContent = document.getElementById('uploadContent');
+            uploadContent.innerHTML = `
+                <h3>File Selected</h3>
+                <p>${file.name} (${formatFileSize(file.size)})</p>
+                <div style="margin-top: 1rem;">
+                    <button class="upload-btn" onclick="analyzeFile(currentFile)">
+                        <span class="loading-spinner" style="display: none;"></span>
+                        Analyze Data
+                    </button>
+                </div>
+            `;
+            
+            showStatus('File loaded successfully. Click "Analyze Data" to process.', 'success');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+            
+            // Auto-hide success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 4000);
+            }
+        }
+
+        async function analyzeFile(file) {
+            try {
+                showStatus('Analyzing diabetes data...', 'info');
+                document.getElementById('results').style.display = 'none';
+                
+                // Show loading state
+                const analyzeBtn = document.querySelector('.upload-btn');
+                const spinner = analyzeBtn.querySelector('.loading-spinner');
+                if (spinner) {
+                    spinner.style.display = 'inline-block';
+                    analyzeBtn.disabled = true;
+                }
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('user_role', currentMode.includes('clinician') ? 'clinician' : 'patient');
+                
+                const response = await fetch('/analyze-csv', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    try {
+                        const errorData = await response.json();
+                        console.log('Error data received:', errorData);
+                        // Hide any existing status messages
+                        const status = document.getElementById('status');
+                        if (status) status.style.display = 'none';
+                        showErrorModal(errorData);
+                    } catch (parseError) {
+                        console.log('Failed to parse error response:', parseError);
+                        // Hide any existing status messages
+                        const status = document.getElementById('status');
+                        if (status) status.style.display = 'none';
+                        // If we can't parse the error response, show a generic error modal
+                        const genericError = {
+                            type: 'ANALYSIS_ERROR',
+                            title: 'Analysis Failed',
+                            message: `Server returned error ${response.status}: ${response.statusText}`,
+                            action_points: [
+                                {
+                                    icon: '🔧',
+                                    title: 'Technical Issue',
+                                    description: 'The server encountered an error processing your request.',
+                                    action: 'Please try again in a few moments or contact support.',
+                                    urgency: 'medium'
+                                }
+                            ]
+                        };
+                        showErrorModal(genericError);
+                    }
+                    return;
+                }
+                
+                const data = await response.json();
+                data.analysis_mode = currentMode;
+                showResultsModal(data);
+                
+            } catch (error) {
+                console.error('Analysis error:', error);
+                // Hide any existing status messages
+                const status = document.getElementById('status');
+                if (status) status.style.display = 'none';
+                // Show a user-friendly error modal instead of raw error text
+                const networkError = {
+                    type: 'NETWORK_ERROR',
+                    title: 'Connection Error',
+                    message: 'Unable to connect to the analysis server. Please check your connection and try again.',
+                    action_points: [
+                        {
+                            icon: '🌐',
+                            title: 'Network Issue',
+                            description: 'Could not reach the analysis server.',
+                            action: 'Check your internet connection and try again.',
+                            urgency: 'medium'
+                        },
+                        {
+                            icon: '🔄',
+                            title: 'Retry Analysis',
+                            description: 'The analysis may have been interrupted.',
+                            action: 'Wait a moment and click "Analyze Data" again.',
+                            urgency: 'low'
+                        }
+                    ]
+                };
+                showErrorModal(networkError);
+            } finally {
+                // Hide loading state
+                const analyzeBtn = document.querySelector('.upload-btn');
+                const spinner = analyzeBtn.querySelector('.loading-spinner');
+                if (spinner) {
+                    spinner.style.display = 'none';
+                    analyzeBtn.disabled = false;
+                }
+            }
+        }
+
+        function displayResults(data) {
+            currentData = data;
+            
+            // Show comprehensive safety warnings first
+            displaySafetyWarnings(data);
+            
+            // Show data quality assessment
+            displayDataQuality(data);
+            
+            // Display statistics based on mode
+            displayStatistics(data);
+            
+            // Display insights based on comprehension level
+            displayInsights(data);
+            
+            // Show visualizations for appropriate modes
+            if (currentMode.includes('clinician') || currentMode === 'patient-detailed') {
+                createTIRChart(data.statistics);
+                createGlucoseTrendChart(data);
+                document.getElementById('tirChart').style.display = 'block';
+                document.getElementById('glucoseChart').style.display = 'block';
+            } else {
+                document.getElementById('tirChart').style.display = 'none';
+                document.getElementById('glucoseChart').style.display = 'none';
+            }
+            
+            document.getElementById('results').style.display = 'block';
+        }
+
+        function displaySafetyWarnings(data) {
+            const safetyContainer = document.getElementById('safety-warnings') || createSafetyContainer();
+            
+            // Clear previous warnings
+            safetyContainer.innerHTML = '';
+            
+            let hasWarnings = false;
+            let warningHtml = '';
+            
+            // Critical safety status
+            if (data.safety_status === "ANALYSIS_WITH_WARNINGS") {
+                hasWarnings = true;
+                warningHtml += `
+                    <div class="safety-alert critical">
+                        <div class="alert-icon">⚠️</div>
+                        <div class="alert-content">
+                            <strong>CLINICAL SAFETY WARNINGS DETECTED</strong><br>
+                            This data contains readings that require immediate clinical attention.
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Individual glucose warnings
+            if (data.individual_warnings && data.individual_warnings.length > 0) {
+                hasWarnings = true;
+                warningHtml += `
+                    <div class="safety-alert high">
+                        <div class="alert-icon">🚨</div>
+                        <div class="alert-content">
+                            <strong>GLUCOSE ALERTS:</strong><br>
+                            ${data.individual_warnings.slice(0, 3).map(w => `• ${w}`).join('<br>')}
+                            ${data.individual_warnings.length > 3 ? `<br>• ... and ${data.individual_warnings.length - 3} more` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Data quality warnings
+            if (data.data_quality && data.data_quality.reliability !== "HIGH") {
+                hasWarnings = true;
+                const severity = data.data_quality.reliability === "UNRELIABLE" ? "critical" : "medium";
+                warningHtml += `
+                    <div class="safety-alert ${severity}">
+                        <div class="alert-icon">${severity === "critical" ? "🛑" : "⚠️"}</div>
+                        <div class="alert-content">
+                            <strong>DATA QUALITY: ${data.data_quality.reliability}</strong><br>
+                            Quality Score: ${data.data_quality.quality_score}% | 
+                            Reliability: ${data.data_quality.reliability}
+                            ${data.data_quality.warnings ? '<br>' + data.data_quality.warnings.slice(0, 2).join('<br>') : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Parsing errors
+            if (data.parsing_errors && data.parsing_errors.length > 0) {
+                hasWarnings = true;
+                warningHtml += `
+                    <div class="safety-alert medium">
+                        <div class="alert-icon">📋</div>
+                        <div class="alert-content">
+                            <strong>DATA PARSING ISSUES:</strong><br>
+                            ${data.parsing_errors.slice(0, 2).map(e => `• ${e}`).join('<br>')}
+                            ${data.parsing_errors.length > 2 ? `<br>• ... and ${data.parsing_errors.length - 2} more issues` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Clinical disclaimer (always show)
+            warningHtml += `
+                <div class="clinical-disclaimer">
+                    <div class="disclaimer-icon">🏥</div>
+                    <div class="disclaimer-content">
+                        <strong>MEDICAL DISCLAIMER:</strong><br>
+                        ${data.clinical_disclaimer || 'This analysis is for informational purposes only. All clinical decisions should be made in consultation with healthcare providers.'}
+                    </div>
+                </div>
+            `;
+            
+            safetyContainer.innerHTML = warningHtml;
+            safetyContainer.style.display = 'block';
+            
+            return hasWarnings;
+        }
+        
+        function createSafetyContainer() {
+            const container = document.createElement('div');
+            container.id = 'safety-warnings';
+            container.className = 'safety-warnings-container';
+            
+            // Insert before results section
+            const resultsSection = document.getElementById('results');
+            resultsSection.parentNode.insertBefore(container, resultsSection);
+            
+            return container;
+        }
+
+        function showErrorModal(errorData) {
+            console.log('showErrorModal called with:', errorData);
+            // Handle both cases: FastAPI error format and direct error data
+            const detail = errorData.detail || errorData;
+            console.log('detail:', detail);
+            
+            let modalContent = '';
+            
+            if (detail.type === 'DATA_QUALITY_INSUFFICIENT') {
+                // Create bullet point summary for why it failed
+                const failureReasons = [];
+                if (detail.data_summary) {
+                    const ds = detail.data_summary;
+                    if (ds.hours_of_data < 24) {
+                        failureReasons.push(`Insufficient data duration: ${ds.hours_of_data} hours (minimum 24 hours required)`);
+                    }
+                    if (ds.quality_score < 80) {
+                        failureReasons.push(`Low quality score: ${ds.quality_score}% (minimum 80% required for high confidence)`);
+                    }
+                    if (ds.reliability === 'LOW' || ds.reliability === 'UNRELIABLE') {
+                        failureReasons.push(`Poor data reliability: ${ds.reliability} (need MODERATE or HIGH reliability)`);
+                    }
+                    if (ds.total_readings < 288) {
+                        failureReasons.push(`Too few readings: ${ds.total_readings} (minimum 288 for 24-hour analysis)`);
+                    }
+                }
+                
+                // Create structured error modal with tabs
+                modalContent = `
+                    <div class="modal-header error-header">
+                        <span class="modal-icon">⚠️</span>
+                        <h2>${detail.title || 'Analysis Failed'}</h2>
+                        <button class="modal-close" onclick="closeModal()">&times;</button>
+                    </div>
+                    <div class="modal-tabs">
+                        <button class="tab-btn active" onclick="switchTab('user-friendly')">User Guide</button>
+                        <button class="tab-btn" onclick="switchTab('failure-summary')">Why It Failed</button>
+                        <button class="tab-btn" onclick="switchTab('technical-details')">System Analysis</button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- User-Friendly Tab -->
+                        <div id="user-friendly-tab" class="tab-content active">
+                            <div class="error-summary">
+                                <p class="error-message">${detail.message}</p>
+                                ${detail.data_summary ? `
+                                    <div class="data-summary">
+                                        <div class="summary-item">
+                                            <span class="label">Data Span:</span>
+                                            <span class="value">${detail.data_summary.hours_of_data} hours</span>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span class="label">Readings:</span>
+                                            <span class="value">${detail.data_summary.total_readings}</span>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span class="label">Quality Score:</span>
+                                            <span class="value">${detail.data_summary.quality_score}%</span>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span class="label">Reliability:</span>
+                                            <span class="value">${detail.data_summary.reliability}</span>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="action-points">
+                                <h3>What You Need To Do:</h3>
+                                ${detail.action_points ? detail.action_points.map(point => `
+                                    <div class="action-point ${point.urgency}">
+                                        <div class="action-icon">${point.icon}</div>
+                                        <div class="action-content">
+                                            <div class="action-title">${point.title}</div>
+                                            <div class="action-description">${point.description}</div>
+                                            <div class="action-step">${point.action}</div>
+                                        </div>
+                                    </div>
+                                `).join('') : ''}
+                            </div>
+                        </div>
+                        
+                        <!-- Failure Summary Tab -->
+                        <div id="failure-summary-tab" class="tab-content">
+                            <h3>Analysis Failed Due To:</h3>
+                            <div class="failure-reasons">
+                                ${failureReasons.map(reason => `
+                                    <div class="failure-item">
+                                        <span class="failure-bullet">❌</span>
+                                        <span class="failure-text">${reason}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <div class="validation-requirements">
+                                <h4>✅ Requirements for Analysis:</h4>
+                                <ul class="requirements-list">
+                                    <li>Minimum 24 hours of continuous glucose data</li>
+                                    <li>At least 288 glucose readings (5-minute intervals)</li>
+                                    <li>Quality score of 80%+ for high confidence</li>
+                                    <li>Data reliability of MODERATE or HIGH</li>
+                                    <li>Valid glucose values between 40-400 mg/dL</li>
+                                    <li>Minimal data gaps (< 20% missing readings)</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- Technical Details Tab -->
+                        <div id="technical-details-tab" class="tab-content">
+                            <h3>System Analysis Details:</h3>
+                            <div class="technical-info">
+                                <div class="json-display">
+                                    <h4>Raw Error Response:</h4>
+                                    <pre class="json-content">${JSON.stringify(errorData, null, 2)}</pre>
+                                </div>
+                                
+                                <div class="validation-details">
+                                    <h4>Validation Checks:</h4>
+                                    <ul class="validation-list">
+                                        <li><strong>Type:</strong> ${detail.type}</li>
+                                        <li><strong>Action Points Count:</strong> ${detail.action_points ? detail.action_points.length : 0}</li>
+                                        <li><strong>Data Quality Assessment:</strong> Complete</li>
+                                        <li><strong>Clinical Safety Check:</strong> FAILED - Insufficient for analysis</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button onclick="closeModal()" class="btn-secondary">Try Another File</button>
+                    </div>
+                `;
+            } else {
+                // Generic error modal
+                modalContent = `
+                    <div class="modal-header error-header">
+                        <span class="modal-icon">❌</span>
+                        <h2>Analysis Failed</h2>
+                        <button class="modal-close" onclick="closeModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="error-message">${errorData.detail || 'Unable to analyze the uploaded file.'}</p>
+                        <div class="action-points">
+                            <div class="action-point medium">
+                                <div class="action-icon">📋</div>
+                                <div class="action-content">
+                                    <div class="action-title">Check File Format</div>
+                                    <div class="action-description">Ensure you're uploading a valid CSV file.</div>
+                                    <div class="action-step">Upload a CSV file from your glucose monitoring device.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button onclick="closeModal()" class="btn-secondary">Try Again</button>
+                    </div>
+                `;
+            }
+            
+            showModal(modalContent);
+        }
+
+        function showResultsModal(data) {
+            // Create results modal content
+            const modalContent = `
+                <div class="modal-header success-header">
+                    <span class="modal-icon">✅</span>
+                    <h2>Analysis Complete</h2>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="results-summary">
+                        <h3>Your Glucose Analysis</h3>
+                        <p class="success-message">${data.summary || 'Analysis completed successfully!'}</p>
+                        
+                        ${data.data_quality ? `
+                            <div class="quality-indicator ${data.data_quality.reliability.toLowerCase()}">
+                                <span class="quality-label">Data Quality:</span>
+                                <span class="quality-value">${data.data_quality.reliability} (${data.data_quality.quality_score}%)</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="results-content">
+                        ${createResultsContent(data)}
+                    </div>
+                    
+                    ${data.clinical_disclaimer ? `
+                        <div class="clinical-disclaimer">
+                            <div class="disclaimer-icon">🏥</div>
+                            <div class="disclaimer-text">${data.clinical_disclaimer}</div>
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="modal-footer">
+                    <button onclick="downloadResults()" class="btn-primary">Download Report</button>
+                    <button onclick="closeModal()" class="btn-secondary">Close</button>
+                </div>
+            `;
+            
+            showModal(modalContent);
+        }
+
+        function createResultsContent(data) {
+            let content = '';
+            
+            // Statistics section
+            if (data.statistics) {
+                content += `
+                    <div class="stats-section">
+                        <h4>Key Statistics</h4>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">Average Glucose</span>
+                                <span class="stat-value">${data.statistics.mean_glucose} mg/dL</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Estimated A1C</span>
+                                <span class="stat-value">${data.statistics.estimated_a1c}% ${data.statistics.a1c_uncertainty || ''}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Time in Range</span>
+                                <span class="stat-value">${data.statistics.tir_70_180}%</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Glucose Range</span>
+                                <span class="stat-value">${data.statistics.min_glucose} - ${data.statistics.max_glucose} mg/dL</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Key insights or patterns
+            if (data.key_insights) {
+                content += `
+                    <div class="insights-section">
+                        <h4>Key Insights</h4>
+                        <ul class="insights-list">
+                            ${data.key_insights.map(insight => `<li>${insight}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            // Recommendations
+            if (data.recommendations) {
+                content += `
+                    <div class="recommendations-section">
+                        <h4>Recommendations</h4>
+                        <ul class="recommendations-list">
+                            ${data.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            // Clinical recommendations
+            if (data.clinical_recommendations) {
+                content += `
+                    <div class="clinical-section">
+                        <h4>Clinical Recommendations</h4>
+                        <ul class="clinical-list">
+                            ${data.clinical_recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            return content;
+        }
+
+        function showModal(content) {
+            // Create modal if it doesn't exist
+            let modal = document.getElementById('analysisModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'analysisModal';
+                modal.className = 'modal-overlay';
+                document.body.appendChild(modal);
+            }
+            
+            modal.innerHTML = `
+                <div class="modal-content">
+                    ${content}
+                </div>
+            `;
+            
+            modal.style.display = 'flex';
+            
+            // Add escape key listener
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                }
+            });
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('analysisModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            
+            // Reset file input
+            const fileInput = document.getElementById('csvFile');
+            if (fileInput) {
+                fileInput.value = '';
+            }
+        }
+
+        function downloadResults() {
+            // Placeholder for download functionality
+            alert('Download feature coming soon!');
+        }
+
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            const selectedTab = document.getElementById(tabName + '-tab');
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        function displayDataQuality(data) {
+            const qualityDiv = document.getElementById('dataQuality');
+            const indicator = document.getElementById('qualityIndicator');
+            const text = document.getElementById('qualityText');
+            
+            const readings = data.total_readings || 0;
+            const hours = data.data_span_hours || 0;
+            
+            let quality = 'poor';
+            let qualityText = '';
+            
+            if (readings >= 288 && hours >= 24) {
+                quality = 'excellent';
+                qualityText = `Excellent data quality: ${readings} readings over ${hours.toFixed(1)} hours`;
+            } else if (readings >= 144 && hours >= 12) {
+                quality = 'good';
+                qualityText = `Good data quality: ${readings} readings over ${hours.toFixed(1)} hours`;
+            } else if (readings >= 72 && hours >= 6) {
+                quality = 'needs-attention';
+                qualityText = `Adequate data quality: ${readings} readings over ${hours.toFixed(1)} hours`;
+            } else {
+                quality = 'poor';
+                qualityText = `Limited data: ${readings} readings over ${hours.toFixed(1)} hours. Consider longer monitoring period`;
+            }
+            
+            indicator.className = `quality-indicator quality-${quality}`;
+            indicator.style.backgroundColor = getComputedStyle(indicator).color;
+            text.textContent = qualityText;
+            qualityDiv.style.display = 'flex';
+        }
+
+        function displayStatistics(data) {
+            const statsGrid = document.getElementById('statsGrid');
+            const stats = data.statistics;
+            
+            let statsHTML = '';
+            
+            switch (currentMode) {
+                case 'patient-simple':
+                    statsHTML = `
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.mean_glucose}</div>
+                            <div class="stat-label">Average Blood Sugar</div>
+                            <div class="stat-sublabel">mg/dL</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.tir_70_180 || stats.time_in_range || 'N/A'}%</div>
+                            <div class="stat-label">Time in Target</div>
+                            <div class="stat-sublabel">70-180 mg/dL</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.estimated_a1c}%</div>
+                            <div class="stat-label">Estimated A1C</div>
+                            <div class="stat-sublabel">Goal: <7%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${data.total_readings}</div>
+                            <div class="stat-label">Total Readings</div>
+                            <div class="stat-sublabel">${data.device_type || 'Device'}</div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'patient-detailed':
+                    statsHTML = `
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.mean_glucose}</div>
+                            <div class="stat-label">Average Glucose</div>
+                            <div class="stat-sublabel">mg/dL (Target: 70-180)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.tir_70_180 || 'N/A'}%</div>
+                            <div class="stat-label">Time in Range</div>
+                            <div class="stat-sublabel">Goal: >70%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.tbr_below_70 || 'N/A'}%</div>
+                            <div class="stat-label">Time Below Range</div>
+                            <div class="stat-sublabel">Goal: <4%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.tar_above_180 || 'N/A'}%</div>
+                            <div class="stat-label">Time Above Range</div>
+                            <div class="stat-sublabel">Goal: <25%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.cv_glucose || 'N/A'}%</div>
+                            <div class="stat-label">Glucose Variability</div>
+                            <div class="stat-sublabel">Goal: <36%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.estimated_a1c}%</div>
+                            <div class="stat-label">Estimated A1C</div>
+                            <div class="stat-sublabel">Goal: <7%</div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'clinician-standard':
+                    statsHTML = `
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.mean_glucose}</div>
+                            <div class="stat-label">Mean Glucose</div>
+                            <div class="stat-sublabel">mg/dL</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.tir_70_180 || 'N/A'}%</div>
+                            <div class="stat-label">TIR (70-180 mg/dL)</div>
+                            <div class="stat-sublabel">Consensus Target: >70%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.tbr_below_70 || 'N/A'}%</div>
+                            <div class="stat-label">TBR <70 mg/dL</div>
+                            <div class="stat-sublabel">Target: <4%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.cv_glucose || 'N/A'}%</div>
+                            <div class="stat-label">Glucose CV</div>
+                            <div class="stat-sublabel">Target: <36%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.estimated_a1c}%</div>
+                            <div class="stat-label">GMI (A1C)</div>
+                            <div class="stat-sublabel">ADA Guidelines</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${data.device_type || 'Unknown'}</div>
+                            <div class="stat-label">Device Type</div>
+                            <div class="stat-sublabel">${data.total_readings} readings</div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'clinician-advanced':
+                    statsHTML = `
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.mean_glucose}</div>
+                            <div class="stat-label">Mean Glucose</div>
+                            <div class="stat-sublabel">±${stats.std_glucose || 'N/A'} mg/dL SD</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.tir_70_180 || 'N/A'}%</div>
+                            <div class="stat-label">TIR (70-180)</div>
+                            <div class="stat-sublabel">International Consensus</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.cv_glucose || 'N/A'}%</div>
+                            <div class="stat-label">Glucose CV</div>
+                            <div class="stat-sublabel">Variability Index</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.mage || 'N/A'}</div>
+                            <div class="stat-label">MAGE</div>
+                            <div class="stat-sublabel">mg/dL (Target: <60)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.gvi || 'N/A'}</div>
+                            <div class="stat-label">GVI</div>
+                            <div class="stat-sublabel">Glycemic Variability</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.tbr_below_54 || 'N/A'}%</div>
+                            <div class="stat-label">TBR <54 mg/dL</div>
+                            <div class="stat-sublabel">Level 2 Hypoglycemia</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.tar_above_250 || 'N/A'}%</div>
+                            <div class="stat-label">TAR >250 mg/dL</div>
+                            <div class="stat-sublabel">Level 2 Hyperglycemia</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${data.data_span_hours || 'N/A'}</div>
+                            <div class="stat-label">Data Duration</div>
+                            <div class="stat-sublabel">Hours monitored</div>
+                        </div>
+                    `;
+                    break;
+            }
+            
+            statsGrid.innerHTML = statsHTML;
+        }
+
+        function displayInsights(data) {
+            const insights = document.getElementById('insights');
+            const tir = data.statistics?.tir_70_180 || 0;
+            const avgGlucose = data.statistics?.mean_glucose || 0;
+            const estimatedA1c = data.statistics?.estimated_a1c || 0;
+            
+            let overallStatus = 'excellent';
+            let statusMessage = 'Blood sugar management looks good!';
+            
+            if (tir < 50 || estimatedA1c > 9) {
+                overallStatus = 'critical';
+                statusMessage = 'Blood sugar needs attention. Consider discussing with healthcare team.';
+            } else if (tir < 70 || estimatedA1c > 7.5) {
+                overallStatus = 'needs-attention';
+                statusMessage = 'Blood sugar control could be improved with adjustments.';
+            }
+            
+            insights.innerHTML = `
+                <div class="analysis-title">Diabetes Analysis Summary</div>
+                
+                <div class="pattern-card ${overallStatus}" style="margin-bottom: 2rem;">
+                    <div class="pattern-header">
+                        <div class="severity-badge severity-${overallStatus}">Overall Status</div>
+                        <div class="pattern-title">Blood Sugar Management</div>
+                    </div>
+                    <div class="pattern-description">
+                        ${statusMessage} Average: ${avgGlucose} mg/dL, Time in Range: ${tir}%, Estimated A1C: ${estimatedA1c}%
+                    </div>
+                </div>
+                
+                <div class="pattern-card">
+                    <div class="pattern-title">Key Insights</div>
+                    <div class="pattern-description">
+                        Analysis based on ${data.total_readings} readings from ${data.device_type || 'your device'} over ${data.data_span_hours?.toFixed(1) || 'N/A'} hours of monitoring.
+                        <br><br>
+                        <strong>Remember:</strong> This analysis is for informational purposes. Always consult with your healthcare team about your diabetes management.
+                    </div>
+                </div>
+            `;
+        }
+
+        function createTIRChart(stats) {
+            const canvas = document.getElementById('tirCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const tir = stats.tir_70_180 || 0;
+            const tbr = stats.tbr_below_70 || 0;
+            const tar = stats.tar_above_180 || 0;
+            
+            // Chart setup
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 100;
+            
+            // Colors
+            const colors = {
+                tbr: '#ff4757',
+                tir: '#10d49a', 
+                tar: '#ff6b35'
+            };
+            
+            // Draw pie chart
+            let currentAngle = -Math.PI / 2;
+            
+            // TBR
+            if (tbr > 0) {
+                const angleSize = (tbr / 100) * 2 * Math.PI;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + angleSize);
+                ctx.fillStyle = colors.tbr;
+                ctx.fill();
+                currentAngle += angleSize;
+            }
+            
+            // TIR
+            if (tir > 0) {
+                const angleSize = (tir / 100) * 2 * Math.PI;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + angleSize);
+                ctx.fillStyle = colors.tir;
+                ctx.fill();
+                currentAngle += angleSize;
+            }
+            
+            // TAR
+            if (tar > 0) {
+                const angleSize = (tar / 100) * 2 * Math.PI;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + angleSize);
+                ctx.fillStyle = colors.tar;
+                ctx.fill();
+            }
+            
+            // Legend
+            const legendX = canvas.width - 180;
+            const legendY = 40;
+            const legendSpacing = 30;
+            
+            ctx.font = '14px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+            
+            // TBR legend
+            ctx.fillStyle = colors.tbr;
+            ctx.fillRect(legendX, legendY, 16, 16);
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-primary');
+            ctx.fillText(`TBR <70: ${tbr.toFixed(1)}%`, legendX + 24, legendY + 12);
+            
+            // TIR legend
+            ctx.fillStyle = colors.tir;
+            ctx.fillRect(legendX, legendY + legendSpacing, 16, 16);
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-primary');
+            ctx.fillText(`TIR 70-180: ${tir.toFixed(1)}%`, legendX + 24, legendY + legendSpacing + 12);
+            
+            // TAR legend
+            ctx.fillStyle = colors.tar;
+            ctx.fillRect(legendX, legendY + legendSpacing * 2, 16, 16);
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-primary');
+            ctx.fillText(`TAR >180: ${tar.toFixed(1)}%`, legendX + 24, legendY + legendSpacing * 2 + 12);
+            
+            // Center text
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-primary');
+            ctx.fillText('Time in Range', centerX, centerY - 10);
+            ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+            ctx.fillStyle = colors.tir;
+            ctx.fillText(`${tir.toFixed(1)}%`, centerX, centerY + 20);
+        }
+
+        function createGlucoseTrendChart(data) {
+            const canvas = document.getElementById('glucoseCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const margin = 80;
+            const chartWidth = canvas.width - 2 * margin;
+            const chartHeight = canvas.height - 2 * margin;
+            
+            // Generate sample data pattern
+            const glucoseValues = Array.from({length: 48}, (_, i) => {
+                const baseValue = data.statistics.mean_glucose;
+                const variation = data.statistics.std_glucose * 0.3;
+                const timeEffect = Math.sin((i / 48) * 4 * Math.PI) * 15;
+                const randomVar = (Math.random() - 0.5) * variation;
+                return Math.max(40, Math.min(400, baseValue + timeEffect + randomVar));
+            });
+            
+            // Y-axis scale
+            const yMin = 40;
+            const yMax = 400;
+            const yRange = yMax - yMin;
+            
+            // Draw background ranges
+            const ranges = [
+                { min: 250, max: 400, color: 'rgba(255, 71, 87, 0.1)', label: 'Very High' },
+                { min: 180, max: 250, color: 'rgba(255, 107, 53, 0.15)', label: 'High' },
+                { min: 70, max: 180, color: 'rgba(16, 212, 154, 0.15)', label: 'Target' },
+                { min: 54, max: 70, color: 'rgba(255, 179, 71, 0.15)', label: 'Low' },
+                { min: 40, max: 54, color: 'rgba(255, 71, 87, 0.1)', label: 'Very Low' }
+            ];
+            
+            ranges.forEach(range => {
+                const y1 = margin + chartHeight - ((range.max - yMin) / yRange) * chartHeight;
+                const y2 = margin + chartHeight - ((range.min - yMin) / yRange) * chartHeight;
+                const height = y2 - y1;
+                
+                ctx.fillStyle = range.color;
+                ctx.fillRect(margin, y1, chartWidth, height);
+            });
+            
+            // Draw axes
+            ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--glass-border');
+            ctx.lineWidth = 1;
+            
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(margin, margin);
+            ctx.lineTo(margin, margin + chartHeight);
+            ctx.stroke();
+            
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(margin, margin + chartHeight);
+            ctx.lineTo(margin + chartWidth, margin + chartHeight);
+            ctx.stroke();
+            
+            // Draw glucose line
+            ctx.strokeStyle = '#00d4ff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            glucoseValues.forEach((value, index) => {
+                const x = margin + (index / (glucoseValues.length - 1)) * chartWidth;
+                const y = margin + chartHeight - ((value - yMin) / yRange) * chartHeight;
+                
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+            
+            // Add labels
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-secondary');
+            ctx.font = '12px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+            ctx.textAlign = 'center';
+            
+            // Time labels
+            for (let i = 0; i <= 48; i += 12) {
+                const x = margin + (i / 48) * chartWidth;
+                ctx.fillText(`${i}h`, x, canvas.height - 20);
+            }
+            
+            // Glucose labels
+            ctx.textAlign = 'right';
+            for (let glucose = 50; glucose <= 400; glucose += 50) {
+                const y = margin + chartHeight - ((glucose - yMin) / yRange) * chartHeight;
+                ctx.fillText(`${glucose}`, margin - 10, y + 4);
+            }
+            
+            // Target lines
+            ctx.strokeStyle = '#10d49a';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 4]);
+            
+            // 180 line
+            let y = margin + chartHeight - ((180 - yMin) / yRange) * chartHeight;
+            ctx.beginPath();
+            ctx.moveTo(margin, y);
+            ctx.lineTo(margin + chartWidth, y);
+            ctx.stroke();
+            
+            // 70 line
+            y = margin + chartHeight - ((70 - yMin) / yRange) * chartHeight;
+            ctx.beginPath();
+            ctx.moveTo(margin, y);
+            ctx.lineTo(margin + chartWidth, y);
+            ctx.stroke();
+            
+            ctx.setLineDash([]);
+        }
+    </script>
+</body>
+</html>
